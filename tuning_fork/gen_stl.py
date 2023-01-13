@@ -115,6 +115,7 @@ def show_voxel(mat=None, path=None):
           )
       )
   )
+  fig.update_layout(scene_aspectmode='cube')
   fig.show()
   
 
