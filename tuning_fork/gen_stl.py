@@ -95,6 +95,7 @@ def show_voxel(mat=None, path=None):
       colors = tuple(map(tuple, colors))
   else:
       colors = (1.0, 0.0, 0.0)
+  axis_visible=True
   fig = go.Figure(
       data=[
           go.Mesh3d(
@@ -109,13 +110,13 @@ def show_voxel(mat=None, path=None):
       ],
       layout=dict(
           scene=dict(
-              xaxis=dict(visible=False),
-              yaxis=dict(visible=False),
-              zaxis=dict(visible=False)
+              xaxis=dict(visible=axis_visible),
+              yaxis=dict(visible=axis_visible),
+              zaxis=dict(visible=axis_visible)
           )
       )
   )
-  fig.update_layout(scene_aspectmode='cube')
+  fig.update_layout(scene_aspectmode='data')
   fig.show()
   
 
