@@ -76,7 +76,7 @@ def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15,
   array=np.concatenate([array, prongs], axis = 2)
   return array
 
-def show_voxel(mat=None, path=None):
+def show_voxel(mat=None, path=None, axis_visible=True, color=None, opacity=0.60):
 
   if path is None:
     assert mat is not None
@@ -90,12 +90,13 @@ def show_voxel(mat=None, path=None):
   triangles = np.asarray(mesh.triangles)
   vertices = np.asarray(mesh.vertices)
   colors = None
-  if mesh.has_triangle_normals():
+  if color is None and mesh.has_triangle_normals():
       colors = (0.5, 0.5, 0.5) + np.asarray(mesh.triangle_normals) * 0.5
       colors = tuple(map(tuple, colors))
+  elif color is not None:
+      colors = color
   else:
       colors = (1.0, 0.0, 0.0)
-  axis_visible=True
   fig = go.Figure(
       data=[
           go.Mesh3d(
@@ -106,7 +107,7 @@ def show_voxel(mat=None, path=None):
               j=triangles[:,1],
               k=triangles[:,2],
               facecolor=colors,
-              opacity=0.60)
+              opacity=opacity)
       ],
       layout=dict(
           scene=dict(
