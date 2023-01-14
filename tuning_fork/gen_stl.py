@@ -15,15 +15,16 @@ def np2stl(mat, output):
   with open(output, "wb") as f:
     volume.marching_cubes.export(f, "stl")
 
-def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15, handle_length=None):
+def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15, handle_length=None, prong_shape=None):
   """
   Args:
     m: 2d numpy array 
     prong_length: length of prong
     thickness: thickness of the base
     close_sides: open sides let you see the inside
-    sides_thickness:
-    handle_length: 
+    sides_thickness: int
+    handle_length: int
+    prong_shape: 2d numpy array
   """
 
   H, W = m.shape
@@ -58,7 +59,7 @@ def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15,
   for i in range(start_prong, handle_length):
     a=np.stack([array[:, :, i] for _ in range(3)], axis=2)
     _thickness = thickness
-    if close_sides and i < start_prong + sides_thickness or i > handle_length - sides_thickness - 1:
+    if close_sides and (i < start_prong + sides_thickness or i > handle_length - sides_thickness - 1):
       _thickness = -1
       a = np.zeros_like(array[:, :, i]) + 255
     else:
@@ -66,9 +67,14 @@ def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15,
       a = _put_rec(a, *right_prong, (255,0,0), _thickness)
       a = a[:, :, 0]
     array[:, :, i] = a
-
-  prongs = np.zeros([H, W*3, prong_length])
+  _prong_length = prong_length + sides_thickness * (close_sides and prong_shape is not None)
+  prongs = np.zeros([H, W*3, _prong_length])
   single_prong = np.stack([m for _ in range(prong_length)], axis = 2)
+  if close_sides and prong_shape is not None:
+      single_prong = np.concatenate(
+          [single_prong, np.stack([prong_shape for _ in range(sides_thickness)], axis=2)],
+          axis=2,
+       )
   (x1,y1), (x2,y2) = left_prong
   prongs[y1:y2+1, x1:x2+1, :] = single_prong
   (x1,y1), (x2,y2) = right_prong

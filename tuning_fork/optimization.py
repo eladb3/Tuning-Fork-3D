@@ -106,7 +106,7 @@ def cut_excess_area(m):
     ex = _check(lambda i: (x[i, :] > 0).float().mean() > t, reversed(range(x.shape[0])))
     sy = _check(lambda i: (x[:, i] > 0).float().mean() > t, range(x.shape[1]))
     ey = _check(lambda i: (x[:, i] > 0).float().mean() > t, reversed(range(x.shape[1])))
-    return m[sx:ex+1, sy:ey+1]
+    return sx,ex,sy,ey
 
 
 
@@ -202,17 +202,28 @@ class SDF(nn.Module):
     '''
     Run the SDF on a grid for evaluation
     '''
-    def get_set(self, N=256, margin=1.5, cut_to_shape=False):
+    def get_set(self, N=256, margin=1.5, cut_to_shape=False, ret_mask=False):
         int_margin = int(margin * (N + 1))
         pts = get_grid(margin * self.a, int_margin).to(DEVICE)
         S = self(pts)
         if self.shape_function is not None:
             _, mask = filter_pts(pts, *self.shape_function)
             S[~mask] = 0
+            mask = mask.reshape((int_margin, int_margin))
         S = S.reshape((int_margin, int_margin))
+        
         if cut_to_shape:
-            S = cut_excess_area(S)
+            if self.shape_function is not None:
+                sx,ex,sy,ey = cut_excess_area(mask)
+                mask = mask[sx:ex+1,sy:ey+1]
+            else:
+                sx,ex,sy,ey = cut_excess_area(S)
+            S = S[sx:ex+1,sy:ey+1]
+
         S = S.detach().cpu().numpy()
+        if ret_mask:
+            mask = mask.detach().cpu().numpy()
+            return S, mask
         return S
 
     def repulsion_loss(self, epsilon=0.001):
