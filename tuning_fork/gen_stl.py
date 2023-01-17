@@ -29,7 +29,7 @@ def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15,
 
   H, W = m.shape
   if handle_length is None:
-    handle_length= H * 3
+    handle_length= prong_length // 3
 
   array = np.zeros([H, W*3, handle_length])
 

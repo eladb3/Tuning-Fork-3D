@@ -14,6 +14,22 @@ Get grid of NxN intervals of the square of side 2s centered around the origin.
 
 DEVICE='cuda' if torch.cuda.is_available() else 'cpu'
 
+def var2str(x):
+    ROUND=10
+    if isinstance(x, (float, int)):
+        ret = round(x,ROUND)
+    elif isinstance(x, (torch.Tensor, np.ndarray)):
+        ret = round(x.item(), ROUND)
+    elif isinstance(x, (dict)):
+        ret = {k:var2str(v) for k,v in x.items()}
+    else:
+        ret = x
+    return ret
+
+def nice_print(*args):
+    print(*args); return
+    # print(" ".join([str(var2str(x)) for x in args]))
+
 def get_grid(s, N):
     x = torch.linspace(-s, s, N + 1)
     y = torch.linspace(-s, s, N + 1)
@@ -121,7 +137,7 @@ class SDF(nn.Module):
                  basis_init='uniform', lambdas_init='uniform',
                  epsilon=3000,
                  epsilon_init='const', shape_function=None):
-        super(SDF, self).__init__()
+        super().__init__()
         self.a = a
         self.n = n
         if basis_init == 'grid':
@@ -166,7 +182,7 @@ class SDF(nn.Module):
         res = (self.lambdas * exp).sum(dim=-1)  # weight the radial functions with lambdas
         if self.indicator_fn is not None: # In the case we learn the residual w.r.t. the indicator function
             ind = self.indicator_fn(x_inp)
-            print('indicator min max', ind.min(), ind.max())
+            # nice_print('indicator min max', ind.min(), ind.max())
             res += ind
         return res
 
@@ -206,6 +222,7 @@ class SDF(nn.Module):
         int_margin = int(margin * (N + 1))
         pts = get_grid(margin * self.a, int_margin).to(DEVICE)
         S = self(pts)
+        mask = None
         if self.shape_function is not None:
             _, mask = filter_pts(pts, *self.shape_function)
             S[~mask] = 0
@@ -282,12 +299,12 @@ class SDF(nn.Module):
         repulsion_loss = self.repulsion_loss(epsilon=rep_epsilon)
         weight_decay_loss = self.weight_decay()
         boundary_loss = self.boundary_loss()
-        print('losses', C_loss.item(), 'A, I', A.item(), I.item(), 'I/A', (I / A).item(), 'C', C.item(), 'logs', np.log((I / A).item()), np.log(C.item()))
-        print('entropy', entropy_loss.item(), 'repulsion', repulsion_loss.item(), 'weight decay', weight_decay_loss.item(), 'boundary', boundary_loss.item())
+        nice_print('losses', C_loss.item(), 'A, I', A.item(), I.item(), 'I/A', (I / A).item(), 'C', C.item(), 'logs', np.log((I / A).item()), np.log(C.item()))
+        nice_print('entropy', entropy_loss.item(), 'repulsion', repulsion_loss.item(), 'weight decay', weight_decay_loss.item(), 'boundary', boundary_loss.item())
         A_eval, I_eval = self.integrate_eval(N=N)
         C_eval = (I_eval / A_eval).item()
         C_continuous = (I / A).item()
-        print('Actual I / A:', np.log(C_eval), 'C', np.log(C.item()))
+        nice_print('Actual I / A:', np.log(C_eval), 'C', np.log(C.item()))
         combined_loss = C_loss + A_weight * A_loss + entropy_weight * entropy_loss + repulsion_weight * repulsion_loss + weight_decay * weight_decay_loss + boundary_weight * boundary_loss
         return combined_loss, C_eval, C_continuous
 
@@ -340,6 +357,150 @@ def midi2hz(m):
 def hz2midi(f):
     return 12 * np.log2(f / 440) + 69
 
+
+def run_optimization():
+    # L = 0.1
+    # L = 0.2
+    # L = 0.096258449640988
+    # L = 0.13613000497529282
+    # a = 0.005
+    # C = (a ** 2) / 12
+    # a = 0.0025
+    # C = (a ** 2) / 4
+    E = 200e9
+    rho = 7.85e3
+    # L = compute_L(256, C, E, rho)
+    # print('new L', L)
+    L = 0.14
+    a = 0.0025
+
+    N = 256
+    save_dir = 'exp'
+
+    basis_inits = ['grid']
+    lambdas_inits = ['uniform']
+    epsilon_inits = ['const']
+    A_weights = [0.]
+    sigmoid_ts = [1e0]
+    entropy_weights = [0.]
+    # repulsion_weights = [0.1]
+    repulsion_weights = [0., 0.0001]
+    repulsion_epsilons = [0.001]
+    weight_decays = [0.001]
+    boundary_weights = [0., 0.0001]
+
+    # Middle C (C4) is midi number 60, so use notes: C, E, F, G, A, C (next octave).
+    # frequencies = [midi2hz(m) for m in [60, 65, 67, 69, 72]]
+    frequencies = [midi2hz(m) for m in [60]]
+    # frequencies = [compute_f(L, E, rho, (2 * a) ** 4)]
+    print('freqs', frequencies)
+
+
+    combinations = itertools.product(frequencies, basis_inits, lambdas_inits, epsilon_inits, A_weights, sigmoid_ts, entropy_weights, repulsion_weights, repulsion_epsilons, weight_decays, boundary_weights)
+    for frequency, basis_init, lambdas_init, epsilon_init, A_weight, sigmoid_t, entropy_weight, repulsion_weight, repulsion_epsilon, weight_decay, boundary_weight in combinations:
+        C = compute_C(frequency, L, E, rho)
+        # C = compute_C(440, L, E, rho)
+
+        params = {'C': C, 'N': N,
+                'A_weight': A_weight,
+                'sigmoid_t': sigmoid_t,
+                'entropy_weight': entropy_weight,
+                'repulsion_weight': repulsion_weight, 'rep_epsilon': repulsion_epsilon,
+                'weight_decay': weight_decay, 'boundary_weight': boundary_weight
+                }
+        print('params:', params)
+        model_str = '#'.join('#'.join(str(el) for el in elem) for elem in params.items() if elem[0] != 'C')
+        # model_str = '1e-5o.n,e'
+
+        model_dir = save_dir + '/' + model_str + '/sdf'
+        image_dir = save_dir + '/' + model_str + '/images'
+        os.makedirs(model_dir, exist_ok=True)
+        os.makedirs(image_dir, exist_ok=True)
+
+        # shape_function = [[[1, 0, -a], [0, 1, -a], [-1, 0, -a], [0, -1, -a]], ['line', 'line', 'line', 'line']]
+        # shape_function = [[[1, 0, -a * 0.8], [0, 1, -a * 0.8], [-1, 0, -a * 0.8], [0, -1, -a * 0.8]], ['line', 'line', 'line', 'line']]
+
+        # shape_function=[[[1, 1, -0.9 * a], [-1, 2, -0.4 * a], [1, -1, -1.2 * a], [-1, -1, -0.8 * a]], ['line', 'line', 'line', 'line']]
+        # shape_function=[[[1, 0, 0], [0, -1, 0], [0, 0, a]], ['line', 'line', 'circle']]
+
+        shape_function=[[[0, 0, 1.2 * a]], ['circle']]
+
+
+
+
+        indicator_fn = shape_indicator_fn(*shape_function)
+        # indicator_fn = None
+
+
+        sdf = SDF(1600, a=2 * a, indicator_fn=indicator_fn, basis_init=basis_init,
+                # shape_function=[[[1, 1, -a], [-1, 1, -a], [1, -1, -a], [-1, -1, -a]], ['line', 'line', 'line', 'line']]
+                # shape_function=[[[0, 0, 0.95 * a]], ['circle']]
+                shape_function=shape_function
+                # shape_function=[[[1, 0, -0.7 * a], [0, 1, -0.7 * a], [-1, 0, -0.7 * a], [0, -1, -0.7 * a]], ['line', 'line', 'line', 'line']]
+
+                # shape_function=None
+                ).to(DEVICE)
+        iters = 500
+        optimizer = optim.Adam(sdf.parameters(), lr=1e-6)
+        total_loss = 0.
+        lr_change = {100: 1e-6}
+        best_C_dist = float('inf')
+        best_C_model = None
+        best_C_image = None
+        no_improvement = 0
+        curr_lr = 1e-5
+
+        for i in range(iters):
+            print('iter', i)
+            if i in lr_change:
+                print('reducing lr to', lr_change[i])
+                set_lr(optimizer, lr_change[i])
+
+            S = sdf.get_set()
+            optimizer.zero_grad()
+            loss, C_eval, C_continuous = sdf.compute_loss(**params)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+            S_disc = (S > 0).astype(np.uint8) * 255
+            S = (((S - S.min()) / (S.max() - S.min())) * 256).astype(np.uint8)
+            if abs(C_eval - C) < best_C_dist:
+                best_C_dist = abs(C_eval - C)
+                no_improvement = 0
+                best_C_image = S_disc
+                save_pth = model_dir + '/best.pt'.format(i)
+                torch.save(sdf.state_dict(), save_pth)
+
+                img = pil_img.fromarray(S_disc)
+                save_pth = image_dir + '/best.pt'.format(i)
+                img.save(save_pth.replace('.pt', '') + '_{}_f{}.png'.format(i, hz2midi(frequency)))
+                img_continuous = pil_img.fromarray(S)
+                img_continuous.save(save_pth.replace('.pt', '') + '_smooth_{}.png'.format(i))
+
+                f_target = compute_f(L, E, rho, C)
+                f_model = compute_f(L, E, rho, C_eval)
+                m_target = hz2midi(f_target)
+                m_model = hz2midi(f_model)
+                print('improved, estimated error in hz:', f_target, 'vs', f_model, 'in tones:', m_target, 'vs', m_model)
+                if i > 1:
+                    plt.clf()
+                f, axarr = plt.subplots(1, 2)
+                axarr[0].imshow(S, cmap='gray')
+                axarr[1].imshow(S_disc, cmap='gray')
+                plt.show()
+
+            else:
+                print('Not Improved {} epochs'.format(no_improvement))
+                improved = False
+                no_improvement += 1
+                if no_improvement >= 20:
+                    # curr_lr *= 0.5
+                    # if curr_lr < 1e-6:
+                    #     break
+                    # set_lr(optimizer, curr_lr)
+                    print('reduced learning rate to', curr_lr)
+                    no_improvement = 0
+    return sdf
 if __name__ == '__main__':
     # L = 0.1
     # L = 0.2
