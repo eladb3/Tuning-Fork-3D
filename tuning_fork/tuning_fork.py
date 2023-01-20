@@ -199,13 +199,16 @@ class TuningFork:
         voxel = self.build_voxel(**kwargs)
         np2stl(voxel, outpath, simplify_mesh=simplify_mesh)
 
-    def plot(self, resize=32):
-        p = "./tmp.stl"
-        self.to_stl(
-            outpath=p,
-            close_sides=False,
-            resize=resize,
-        )
+    def plot(self, resize=32, stl_path = None):
+        if stl_path is None:
+            p = "./tmp.stl"
+            self.to_stl(
+                outpath=p,
+                close_sides=False,
+                resize=resize,
+            )
+        else:
+            p = stl_path
         show_voxel(path=p)        
 
 
