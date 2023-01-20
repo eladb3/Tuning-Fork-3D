@@ -7,6 +7,7 @@ There are three main modules,  `tuning_fork/optimization.py` that contains the c
 In this colab notebook we provide a usage example:
 https://colab.research.google.com/drive/1jbMiMMLFxkXaZlNwFbU-UzglVcHeHYkd?usp=sharing
 
+More examples (with the stl output file) can be found in the folder `examples`.
 
 ## Environment
 In order to run this code, you should have pytorch installed (https://pytorch.org/), and:
