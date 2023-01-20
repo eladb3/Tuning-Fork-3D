@@ -1,4 +1,4 @@
-from .optimization_v2 import *
+from .optimization import *
 from .gen_stl import *
 def generate_tuning_fork():
     pass
@@ -85,76 +85,6 @@ class TuningFork:
             shape_function=self.shape_function,
         ).to(DEVICE)
 
-    def optimize_OLD(self):
-        params = self.get_params()
-        nice_print('params:', params)
-        model_dir, image_dir = self.get_save_dirs()
-        self.init_sdf()
-        sdf = self.sdf
-        C = self.C
-        curr_lr = self.base_lr
-
-        iters = self.max_iters
-        optimizer = optim.Adam(sdf.parameters(), lr=curr_lr)
-        total_loss = 0.
-        lr_change = {100: 1e-6}
-        best_C_dist = float('inf')
-        no_improvement = 0
-
-        for i in range(iters):
-            nice_print('iter', i)
-            if i in lr_change:
-                nice_print('reducing lr to', lr_change[i])
-                set_lr(optimizer, lr_change[i])
-
-            S = sdf.get_set()
-            optimizer.zero_grad()
-            _params = {k:v for k,v in params.items() if k in inspect.signature(sdf.compute_loss).parameters.keys()}
-            loss, C_eval, C_continuous = sdf.compute_loss(**_params)
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-            S_disc = (S > 0).astype(np.uint8) * 255
-            S = (((S - S.min()) / (S.max() - S.min())) * 256).astype(np.uint8)
-            if abs(C_eval - C) < best_C_dist:
-                best_C_dist = abs(C_eval - C)
-                no_improvement = 0
-                best_C_image = S_disc
-                save_pth = model_dir + '/best.pt'.format(i)
-                torch.save(sdf.state_dict(), save_pth)
-
-                img = pil_img.fromarray(S_disc)
-                save_pth = image_dir + '/best.pt'.format(i)
-                img.save(save_pth.replace('.pt', '') + '_{}_f{}.png'.format(i, hz2midi(self.frequency)))
-                img_continuous = pil_img.fromarray(S)
-                img_continuous.save(save_pth.replace('.pt', '') + '_smooth_{}.png'.format(i))
-
-                f_target = compute_f(self.L, self.E, self.rho, self.C)
-                f_model = compute_f(self.L, self.E, self.rho, C_eval)
-                m_target = hz2midi(f_target)
-                m_model = hz2midi(f_model)
-                nice_print('improved, estimated error in hz:', f_target, 'vs', f_model, 'in tones:', m_target, 'vs', m_model)
-                if i > 1:
-                    plt.clf()
-                f, axarr = plt.subplots(1, 2)
-                axarr[0].imshow(S, cmap='gray')
-                axarr[1].imshow(S_disc, cmap='gray')
-                plt.show()
-
-            else:
-                nice_print("Not improved {} iters".format(no_improvement))
-                improved = False
-                no_improvement += 1
-                if no_improvement >= 20:
-                    break
-                    # curr_lr *= 0.5
-                    if curr_lr < 1e-6:
-                        break
-                    curr_le = 1e-6
-                    set_lr(optimizer, curr_lr)
-                    print('reduced learning rate to', curr_lr)
-                    no_improvement = 0
-    
     def optimize(self):
         params = self.get_params()
         nice_print('params:', params)
