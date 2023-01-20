@@ -105,11 +105,11 @@ def line_indicator(a, b, c, t=1e5, eps=0., line_type='line'):
         return lambda x: torch.sigmoid(-t * (((x - center) ** 2).sum(dim=1) - (c ** 2 + eps)))
 
 
-def shape_indicator_fn(lines, line_types, eps = 0.0001):
+def shape_indicator_fn(lines, line_types, eps = 0.0001, boundary_val = 1):
     indicators1 = [line_indicator(*line, line_type=line_type) for line, line_type in zip(lines, line_types)]
     indicators2 = [line_indicator(*line, line_type=line_type, eps=eps) for line, line_type in zip(lines, line_types)]
 
-    return lambda x: prod([indicator(x) for indicator in indicators1]) * (1 - prod([indicator(x) for indicator in indicators2]))
+    return lambda x: boundary_val * prod([indicator(x) for indicator in indicators1]) * (1 - prod([indicator(x) for indicator in indicators2]))
 
 def cut_excess_area(m):
     def _check(f, rng):

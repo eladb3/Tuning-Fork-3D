@@ -10,10 +10,25 @@ def stl2np(path_stl_file):
   mat = volume.matrix # matrix of boolean
   return mat
 
-def np2stl(mat, output):
+from tuning_fork.mesh_simplify import simplify_mesh as simplify_mesh_func
+import open3d as o3d
+def np2stl(mat, output, simplify_mesh=True, target_number_of_triangles = None):
   volume = trimesh.voxel.base.VoxelGrid(mat)
+
   with open(output, "wb") as f:
     volume.marching_cubes.export(f, "stl")
+  mesh = o3d.io.read_triangle_mesh(output)
+  mesh = mesh.remove_duplicated_triangles()
+  mesh = mesh.remove_degenerate_triangles()
+  mesh = mesh.remove_duplicated_vertices()
+  mesh = mesh.remove_non_manifold_edges()
+  mesh = mesh.remove_unreferenced_vertices()
+  mesh = o3d.geometry.TriangleMesh.compute_triangle_normals(mesh)
+  o3d.io.write_triangle_mesh(output, mesh)
+  if simplify_mesh:
+    ret = simplify_mesh_func(output, target_number_of_triangles)
+    ret = o3d.geometry.TriangleMesh.compute_triangle_normals(ret)
+    o3d.io.write_triangle_mesh(output,ret)
 
 def gen_voxel(m, prong_length, thickness, close_sides=False, sides_thickness=15, handle_length=None, prong_shape=None):
   """
