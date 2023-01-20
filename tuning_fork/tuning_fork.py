@@ -125,11 +125,11 @@ class TuningFork:
                 save_pth = model_dir + '/best.pt'.format(i)
                 torch.save(sdf.state_dict(), save_pth)
 
-                img = pil_img.fromarray(S_disc)
+                # img = pil_img.fromarray(S_disc)
                 save_pth = image_dir + '/best.pt'.format(i)
-                cv2.imwrite(save_pth.replace('.pt', '') + '_{}_f{}.png'.format(i, hz2midi(self.frequency)), img)
-                img_continuous = pil_img.fromarray(S)
-                cv2.imwrite(save_pth.replace('.pt', '') + '_smooth_{}.png'.format(i), img_continuous)
+                cv2.imwrite(save_pth.replace('.pt', '') + '_{}_f{}.png'.format(i, hz2midi(self.frequency)), S_disc)
+                # img_continuous = pil_img.fromarray(S)
+                cv2.imwrite(save_pth.replace('.pt', '') + '_smooth_{}.png'.format(i), S)
 
                 f_target = compute_f(L, E, rho, C)
                 f_model = compute_f(L, E, rho, C_eval)
