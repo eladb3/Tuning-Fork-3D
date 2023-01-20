@@ -127,9 +127,9 @@ class TuningFork:
 
                 img = pil_img.fromarray(S_disc)
                 save_pth = image_dir + '/best.pt'.format(i)
-                img.save(save_pth.replace('.pt', '') + '_{}_f{}.jpg'.format(i, hz2midi(self.frequency)))
+                cv2.imwrite(save_pth.replace('.pt', '') + '_{}_f{}.png'.format(i, hz2midi(self.frequency)), img)
                 img_continuous = pil_img.fromarray(S)
-                img_continuous.save(save_pth.replace('.pt', '') + '_smooth_{}.jpg'.format(i))
+                cv2.imwrite(save_pth.replace('.pt', '') + '_smooth_{}.png'.format(i), img_continuous)
 
                 f_target = compute_f(L, E, rho, C)
                 f_model = compute_f(L, E, rho, C_eval)
