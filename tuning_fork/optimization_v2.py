@@ -9,7 +9,12 @@ import os
 from PIL import Image as pil_img
 DEVICE='cuda' if torch.cuda.is_available() else 'cpu'
 def nice_print(*args):
-    print(*args); return
+    ret = []
+    for k in args:
+        if isinstance(k, (float, )):
+            k = round(k, 10)
+        ret.append(k)
+    print(*ret); return
 
 '''
 Get grid of NxN intervals of the square of side 2s centered around the origin.
@@ -365,12 +370,12 @@ class SDF(nn.Module):
         repulsion_loss = self.repulsion_loss(epsilon=rep_epsilon)
         weight_decay_loss = self.weight_decay()
         boundary_loss = self.boundary_loss()
-        print('losses', C_loss.item(), 'A, I', A.item(), I.item(), 'I/A', (I / A).item(), 'C', C.item(), 'logs', np.log((I / A).item()), np.log(C.item()))
-        print('entropy', entropy_loss.item(), 'repulsion', repulsion_loss.item(), 'weight decay', weight_decay_loss.item(), 'boundary', boundary_loss.item())
+        nice_print('losses', C_loss.item(), 'A, I', A.item(), I.item(), 'I/A', (I / A).item(), 'C', C.item(), 'logs', np.log((I / A).item()), np.log(C.item()))
+        nice_print('entropy', entropy_loss.item(), 'repulsion', repulsion_loss.item(), 'weight decay', weight_decay_loss.item(), 'boundary', boundary_loss.item())
         A_eval, I_eval = self.integrate_eval(N=N)
         C_eval = (I_eval / A_eval).item()
         C_continuous = (I / A).item()
-        print('Actual I / A:', np.log(C_eval), 'C', np.log(C.item()))
+        nice_print('Actual I / A:', np.log(C_eval), 'C', np.log(C.item()))
         combined_loss = C_loss + A_weight * A_loss + entropy_weight * entropy_loss + repulsion_weight * repulsion_loss + weight_decay * weight_decay_loss + boundary_weight * boundary_loss
         return combined_loss, C_eval, C_continuous
 
@@ -391,7 +396,7 @@ def hz2midi(f):
 # repulsion_epsilons = [0.0001, 0.001, 0.01, 0.1]
 # weight_decays = [0., 0.1, 0.01, 0.001, 0.0001, 0.00001]
 # boundary_weights = [0., 0.1, 0.01, 0.001, 0.0001, 0.00001]
-def optimizev2_main():
+def main():
     E = 200e9
     rho = 7.85e3
     L = 0.14

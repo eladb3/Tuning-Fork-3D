@@ -85,7 +85,7 @@ class TuningFork:
             shape_function=self.shape_function,
         ).to(DEVICE)
 
-    def optimize(self):
+    def optimize_OLD(self):
         params = self.get_params()
         nice_print('params:', params)
         model_dir, image_dir = self.get_save_dirs()
@@ -155,7 +155,7 @@ class TuningFork:
                     print('reduced learning rate to', curr_lr)
                     no_improvement = 0
     
-    def optimizev2(self):
+    def optimize(self):
         params = self.get_params()
         nice_print('params:', params)
         model_dir, image_dir = self.get_save_dirs()
