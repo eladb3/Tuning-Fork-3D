@@ -110,7 +110,13 @@ def line_indicator(a, b, c, t=1e5, eps=0., line_type='line'):
         center = torch.tensor([a, b]).to(DEVICE)
         return lambda x: torch.sigmoid(-t * (((x - center) ** 2).sum(dim=1) - (c ** 2 + eps)))
 
-
+'''
+Smooth approximation of the indicator function of the boundary of a general shape defined as an intersection of half-planes and circles.
+lines - list of lines, each line defined by parameters a, b, c
+line_types - list of strings - 'line' or 'circle'.
+eps - paramter controlling boundary thickness.
+boundary_val - value of the function on the boundary.
+'''
 def shape_indicator_fn(lines, line_types, eps=1e-4, boundary_val=200):
     indicators1 = [line_indicator(*line, line_type=line_type) for line, line_type in zip(lines, line_types)]
     indicators2 = [line_indicator(*line, line_type=line_type, eps=eps) for line, line_type in zip(lines, line_types)]
