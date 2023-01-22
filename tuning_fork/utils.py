@@ -15,7 +15,11 @@ def get_line(pt1, pt2):
 def angle2pt(angle):
     return (np.sin(angle), np.cos(angle))
 
-
+'''
+Get an example shape, either triangle, circle or square. The triangle and square are defined as an intersection of lines,
+where each line is represented as a list [a, b, c] representing the equation ax + by + c = 0. The circle is represented as
+a list [a, b, c] representing the equation (x - a) ** 2 + (y - b) ** 2 = c ** 2
+'''
 def get_example_shape(shape_type):
     assert shape_type in ['triangle', 'circle', 'square']
     if shape_type == 'triangle':
