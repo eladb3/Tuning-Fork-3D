@@ -31,7 +31,7 @@ class TuningFork:
         shape_eps=0.0001,
         max_iters = 500,
         base_lr=1e-5,
-        error=1e-3, verbose=False
+        error=0.1, verbose=False
     ):
         if shape_function == 'default_circle':
             shape_function=[[[0, 0, 1.2 * a]], ['circle']]
@@ -149,19 +149,14 @@ class TuningFork:
                 plt.show()
                 if abs(m_target - m_model) <= self.error:
                     break
+
+            else:
+                improved = False
+                no_improvement += 1
+                if no_improvement >= 40:
+                    break
         print('Finished, estimated error in hz:', f_target, 'vs', f_model, 'in semi-tones:', m_target, 'vs', m_model)
 
-            # else:
-            #     print('else')
-            #     improved = False
-            #     no_improvement += 1
-            #     if no_improvement >= 20:
-            #         # curr_lr *= 0.5
-            #         # if curr_lr < 1e-6:
-            #         #     break
-            #         # set_lr(optimizer, curr_lr)
-            #         print('reduced learning rate to', curr_lr)
-            #         no_improvement = 0
     def get_cross_section(self):
         assert self.sdf is not None, "Please run optimization"
         m, mask = self.sdf.get_set(N=self.N,cut_to_shape=True, ret_mask=True)
