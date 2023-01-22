@@ -147,7 +147,7 @@ class TuningFork:
                 axarr[0].imshow(S, cmap='gray')
                 axarr[1].imshow(S_disc, cmap='gray')
                 plt.show()
-                if abs(m_target - m_model) <= 1e-1:
+                if abs(m_target - m_model) <= self.error:
                     print("Finished")
                     break
 
