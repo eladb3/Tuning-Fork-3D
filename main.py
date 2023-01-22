@@ -37,4 +37,5 @@ if __name__ == '__main__':
         error=1e-3, max_iters=100, verbose=False
     )
     tfork.optimize()
+    tfork.N = 32 # Lower resolution for 3D model
     tfork.to_stl(outpath = f"tuning-fork.stl", simplify_mesh=False, close_sides=True)
