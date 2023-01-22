@@ -140,7 +140,7 @@ class TuningFork:
                 f_model = compute_f(L, E, rho, C_eval)
                 m_target = hz2midi(f_target)
                 m_model = hz2midi(f_model)
-                print('improved, estimated error in hz:', f_target, 'vs', f_model, 'in tones:', m_target, 'vs', m_model)
+                print('improved, estimated error in hz:', f_target, 'vs', f_model, 'in semi-tones:', m_target, 'vs', m_model)
                 if i > 1:
                     plt.clf()
                 f, axarr = plt.subplots(1, 2)
@@ -148,8 +148,8 @@ class TuningFork:
                 axarr[1].imshow(S_disc, cmap='gray')
                 plt.show()
                 if abs(m_target - m_model) <= self.error:
-                    print("Finished")
                     break
+        print('Finished, estimated error in hz:', f_target, 'vs', f_model, 'in semi-tones:', m_target, 'vs', m_model)
 
             # else:
             #     print('else')
