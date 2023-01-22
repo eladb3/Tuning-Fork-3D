@@ -134,13 +134,18 @@ def draw_circle(image, r, scale=1):
     rs = xg ** 2 + yg ** 2
     image[np.abs(rs - r ** 2) < 100 * scale] = 1
 
+'''
+Get line connecting two points.
+'''
 def get_line(pt1, pt2):
     x1, y1 = pt1
     x2, y2 = pt2
     # return [y2 - y1, -x2 + x1, -x1 * y2 + x2 * y1]
     return [-y2 + y1, x2 - x1, x1 * y2 - x2 * y1]
 
-
+'''
+Get unit length point corresponding to an angle.
+'''
 def angle2pt(angle):
     return (np.sin(angle), np.cos(angle))
 
