@@ -205,8 +205,9 @@ class SDF(nn.Module):
     def __init__(self, n=100, a=0.005, indicator_fn=None,
                  basis_init='uniform', lambdas_init='uniform',
                  epsilon=3000,
-                 epsilon_init='const', shape_function=None):
+                 epsilon_init='const', shape_function=None, verbose=False):
         super(SDF, self).__init__()
+        self.verbose = verbose
         self.a = a
         self.n = n
         if basis_init == 'grid':
@@ -368,12 +369,14 @@ class SDF(nn.Module):
         repulsion_loss = self.repulsion_loss(epsilon=rep_epsilon)
         weight_decay_loss = self.weight_decay()
         boundary_loss = self.boundary_loss()
-        nice_print('losses', C_loss.item(), 'A, I', A.item(), I.item(), 'I/A', (I / A).item(), 'C', C.item(), 'logs', np.log((I / A).item()), np.log(C.item()))
-        nice_print('entropy', entropy_loss.item(), 'repulsion', repulsion_loss.item(), 'weight decay', weight_decay_loss.item(), 'boundary', boundary_loss.item())
+        if self.verbose:
+            nice_print('losses', C_loss.item(), 'A, I', A.item(), I.item(), 'I/A', (I / A).item(), 'C', C.item(), 'logs', np.log((I / A).item()), np.log(C.item()))
+            nice_print('entropy', entropy_loss.item(), 'repulsion', repulsion_loss.item(), 'weight decay', weight_decay_loss.item(), 'boundary', boundary_loss.item())
         A_eval, I_eval = self.integrate_eval(N=N)
         C_eval = (I_eval / A_eval).item()
         C_continuous = (I / A).item()
-        nice_print('Actual I / A:', np.log(C_eval), 'C', np.log(C.item()))
+        if self.verbose:
+            nice_print('Actual I / A:', np.log(C_eval), 'C', np.log(C.item()))
         combined_loss = C_loss + A_weight * A_loss + entropy_weight * entropy_loss + repulsion_weight * repulsion_loss + weight_decay * weight_decay_loss + boundary_weight * boundary_loss
         return combined_loss, C_eval, C_continuous
 

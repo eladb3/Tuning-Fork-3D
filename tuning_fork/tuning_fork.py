@@ -31,12 +31,15 @@ class TuningFork:
         shape_eps=0.0001,
         max_iters = 500,
         base_lr=1e-5,
+        error=1e-3, verbose=False
     ):
         if shape_function == 'default_circle':
             shape_function=[[[0, 0, 1.2 * a]], ['circle']]
         for k,v in locals().items():
             setattr(self, k,v)
         self.sdf = None
+        self.error = error
+        self.verbose = verbose
 
     def get_params(self):
         self.C = C = compute_C(self.frequency, self.L, self.E, self.rho)
@@ -61,7 +64,7 @@ class TuningFork:
 
     def get_save_dirs(self):
         params = self.get_params()
-        model_str = '#'.join('#'.join(str(el) for el in elem) for elem in params.items() if elem[0] != 'C')
+        model_str = '#'.join('#'.join(str(el)[:3] for el in elem) for elem in params.items() if elem[0] != 'C')
 
         model_dir = self.save_dir + '/' + model_str + '/sdf'
         image_dir = self.save_dir + '/' + model_str + '/images'
@@ -84,7 +87,7 @@ class TuningFork:
             a=2 * self.a,
             indicator_fn=indicator_fn,
             basis_init=self.basis_init,
-            shape_function=self.shape_function,
+            shape_function=self.shape_function, verbose=self.verbose
         ).to(DEVICE)
 
     def optimize(self):
