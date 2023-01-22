@@ -151,17 +151,17 @@ class TuningFork:
                     print("Finished")
                     break
 
-            else:
-                print('else')
-                improved = False
-                no_improvement += 1
-                if no_improvement >= 20:
-                    # curr_lr *= 0.5
-                    # if curr_lr < 1e-6:
-                    #     break
-                    # set_lr(optimizer, curr_lr)
-                    print('reduced learning rate to', curr_lr)
-                    no_improvement = 0
+            # else:
+            #     print('else')
+            #     improved = False
+            #     no_improvement += 1
+            #     if no_improvement >= 20:
+            #         # curr_lr *= 0.5
+            #         # if curr_lr < 1e-6:
+            #         #     break
+            #         # set_lr(optimizer, curr_lr)
+            #         print('reduced learning rate to', curr_lr)
+            #         no_improvement = 0
     def get_cross_section(self):
         assert self.sdf is not None, "Please run optimization"
         m, mask = self.sdf.get_set(N=self.N,cut_to_shape=True, ret_mask=True)
