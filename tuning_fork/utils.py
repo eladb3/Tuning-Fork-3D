@@ -1,5 +1,10 @@
 import numpy as np
 
+def midi2hz(m):
+    return 440 * 2 ** ((m - 69) / 12)
+def hz2midi(f):
+    return 12 * np.log2(f / 440) + 69
+
 def get_line(pt1, pt2):
     x1, y1 = pt1
     x2, y2 = pt2
